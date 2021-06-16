@@ -37,11 +37,13 @@ class Mask_R_CNN:
 
         scores = outputs['instances'].scores.to('cpu').numpy()
 
-        ## TODO: Convert to middle format
         bboxes = outputs['instances'].pred_boxes.tensor.to('cpu').numpy()
         masks = outputs['instances'].pred_masks.to('cpu').numpy()
 
-        return scores, bboxes, masks, outputs
+        # Convert xyxy corner format to xywh center format
+        bboxes_center = [[(i[0] + i[2]) / 2, (i[1] + i[3]) / 2, abs(i[2] - i[0]), abs(i[3] - i[1])] for i in bboxes]
+
+        return scores, bboxes_center, masks, outputs
 
     def visualize(self, input_image, output):
         '''

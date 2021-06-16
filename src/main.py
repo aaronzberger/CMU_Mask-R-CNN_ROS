@@ -11,6 +11,7 @@ import json
 from CMU_Mask_R_CNN.msg import predictions
 import cv2 as cv
 from vision_msgs.msg import BoundingBox2D
+from geometry_msgs.msg import Pose2D
 from cv_converter import CV_Converter
 from std_msgs.msg import Header
 
@@ -42,17 +43,21 @@ class CNN_Node:
         cv_img = cv.flip(cv_img, flipCode=0)
         cv_img = cv.cvtColor(cv_img, cv.COLOR_BGR2RGB)
 
-        cv.imwrite('/home/aaron/testimage.png', cv_img)
-
         scores, bboxes, masks, output = self.model.forward(cv_img)
 
         # If you wish to publish the visualized results
         visualized = self.model.visualize(cv_img, output)
         self.pub_results.publish(self.cv_converter.cv_to_msg(visualized))
 
-        # TODO: Convert outputs from forward call to predictions message
+        # Convert outputs from forward call to predictions message
         pub_msg = predictions()
-        pub_msg.header = Header(stamp=rospy.Time.now())
+        pub_msg.header = Header(stamp=data.header.stamp)
+
+        pub_msg.scores = scores
+        pub_msg.bboxes = [BoundingBox2D(center=Pose2D(x=i[0], y=i[1]), size_x=i[2], size_y=i[3]) for i in bboxes]
+        pub_msg.masks = [self.cv_converter.cv_to_msg(masks[i]) for i in range(output.shape[0])]
+
+        pub_msg.source_image = data
 
         self.pub_predictions.publish(pub_msg)
 
