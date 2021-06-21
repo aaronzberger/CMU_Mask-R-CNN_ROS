@@ -13,7 +13,9 @@ class Mask_R_CNN:
         self.model_cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = cfg['score_threshold']
         self.model_cfg.MODEL.WEIGHTS = cfg['model_path']
         self.model_cfg.MODEL.ROI_HEADS.NUM_CLASSES = 2  # background, trunk
+        self.model_cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST = 0.1
         self.model_cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = (128)
+        self.model_cfg.MODEL.DEVICE = 'cuda:1'
 
         self.model = DefaultPredictor(self.model_cfg)
 

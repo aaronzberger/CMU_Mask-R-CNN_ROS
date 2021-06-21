@@ -14,6 +14,8 @@ from vision_msgs.msg import BoundingBox2D
 from geometry_msgs.msg import Pose2D
 from cv_converter import CV_Converter
 from std_msgs.msg import Header
+import numpy as np
+import time
 
 
 class CNN_Node:
@@ -37,17 +39,20 @@ class CNN_Node:
             '/cnn_vis', Image, queue_size=1)
 
     def image_callback(self, data):
+        if not data.header.seq % self.cfg['use_image_every'] == 0:
+            return
         cv_img = self.cv_converter.msg_to_cv(data)
 
         # If a vertical flip is needed
-        cv_img = cv.flip(cv_img, flipCode=0)
+        cv_img = cv.flip(cv_img, flipCode=-1)
         cv_img = cv.cvtColor(cv_img, cv.COLOR_BGR2RGB)
 
         scores, bboxes, masks, output = self.model.forward(cv_img)
+        masks = masks.astype(np.uint8) * 255
 
         # If you wish to publish the visualized results
         visualized = self.model.visualize(cv_img, output)
-        self.pub_results.publish(self.cv_converter.cv_to_msg(visualized))
+        self.pub_results.publish(self.cv_converter.cv_to_msg(cv.flip(visualized, flipCode=-1)))
 
         # Convert outputs from forward call to predictions message
         pub_msg = predictions()
@@ -55,9 +60,9 @@ class CNN_Node:
 
         pub_msg.scores = scores
         pub_msg.bboxes = [BoundingBox2D(center=Pose2D(x=i[0], y=i[1]), size_x=i[2], size_y=i[3]) for i in bboxes]
-        pub_msg.masks = [self.cv_converter.cv_to_msg(masks[i]) for i in range(output.shape[0])]
+        pub_msg.masks = [self.cv_converter.cv_to_msg(masks[i], mono=True) for i in range(masks.shape[0])]
 
-        pub_msg.source_image = data
+        pub_msg.source_image = self.cv_converter.cv_to_msg(cv.flip(cv_img, flipCode=-1))
 
         self.pub_predictions.publish(pub_msg)
 

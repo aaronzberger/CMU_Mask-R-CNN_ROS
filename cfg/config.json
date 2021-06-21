@@ -1,4 +1,5 @@
 {
     "model_path": "/home/aaron/Image_Trunk_Detection/output/model_final.pth",
-    "score_threshold": 0.5
+    "score_threshold": 0.8,
+    "use_image_every": 5
 }
